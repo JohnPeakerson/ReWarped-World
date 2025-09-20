@@ -15,25 +15,25 @@ jobs:
 
     steps:
       # 1. Checkout the repository code
-      #    The 'lfs: true' option is crucial for downloading the encrypted ROM
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           lfs: true
 
-      # 2. Set up the N64 Modern SDK
+      # 2. Set up the N64 Modern SDK -- THIS STEP IS UPDATED
       - name: Install N64 Modern SDK
         run: |
           echo "Downloading N64 Modern SDK..."
-          curl -L -o n64sdk.tar.gz https://github.com/crash-override/modern-n64-sdk/releases/download/2023.09.05-1/n64chain-linux.tar.gz
+          # UPDATED URL to the latest release
+          curl -L -o n64sdk.tar.gz https://github.com/crash-override/modern-n64-sdk/releases/download/2024.03.04-1/n64chain-linux.tar.gz
           echo "Verifying checksum..."
-          echo "e2297120ca2b083c260273e96d2999336829707248af0ebf2887a052e46d3284  n64sdk.tar.gz" | sha256sum --check
+          # UPDATED checksum to match the new version
+          echo "03e945c79010abdb14a4857b6058e37604f7c1995f59c1c4f4d1e2175949d28e  n64sdk.tar.gz" | sha256sum --check
           tar -zxvf n64sdk.tar.gz
           echo "$(pwd)/n64chain-linux/bin" >> $GITHUB_PATH
         shell: bash
 
       # 3. Install system dependencies
-      #    Added 'p7zip-full' for decryption and 'unzip' for patching.
       - name: Install System Dependencies
         run: |
           sudo apt-get update
@@ -48,7 +48,7 @@ jobs:
             p7zip-full \
             unzip
 
-      # 4. NEW: Decrypt the Base ROM using the secret password
+      # 4. Decrypt the Base ROM using the secret password
       - name: Decrypt Base ROM
         run: |
           if [ -z "${{ secrets.ROM_PASSWORD }}" ]; then
