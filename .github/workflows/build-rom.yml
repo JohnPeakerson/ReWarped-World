@@ -20,17 +20,20 @@ jobs:
         with:
           lfs: true
 
-      # 2. Set up the N64 Modern SDK -- THIS STEP IS UPDATED
-      - name: Install N64 Modern SDK
+      # 2. Set up the N64 SDK -- THIS STEP IS REVISED PER YOUR INSTRUCTIONS
+      - name: Install N64 SDK from ultra64.ca
         run: |
-          echo "Downloading N64 Modern SDK..."
-          # UPDATED URL to the latest release
-          curl -L -o n64sdk.tar.gz https://github.com/crash-override/modern-n64-sdk/releases/download/2024.03.04-1/n64chain-linux.tar.gz
-          echo "Verifying checksum..."
-          # UPDATED checksum to match the new version
-          echo "03e945c79010abdb14a4857b6058e37604f7c1995f59c1c4f4d1e2175949d28e  n64sdk.tar.gz" | sha256sum --check
-          tar -zxvf n64sdk.tar.gz
-          echo "$(pwd)/n64chain-linux/bin" >> $GITHUB_PATH
+          echo "Downloading N64 SDK from ultra64.ca..."
+          # Using the specific link you provided
+          wget -O n64sdk.7z http://ultra64.ca/files/software/other/sdks/n64sdk.7z
+          
+          echo "Extracting SDK..."
+          # Using 7z to extract the archive
+          7z x n64sdk.7z
+          
+          echo "Adding SDK to PATH..."
+          # The extracted folder structure is different, so we update the path
+          echo "$(pwd)/n64sdk/mips64/bin" >> $GITHUB_PATH
         shell: bash
 
       # 3. Install system dependencies
