@@ -1,0 +1,83 @@
+# .github/workflows/build-rom.yml
+
+name: Build SM64 Patch
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout the repository code
+      #    The 'lfs: true' option is crucial for downloading the encrypted ROM
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      # 2. Set up the N64 Modern SDK
+      - name: Install N64 Modern SDK
+        run: |
+          echo "Downloading N64 Modern SDK..."
+          curl -L -o n64sdk.tar.gz https://github.com/crash-override/modern-n64-sdk/releases/download/2023.09.05-1/n64chain-linux.tar.gz
+          echo "Verifying checksum..."
+          echo "e2297120ca2b083c260273e96d2999336829707248af0ebf2887a052e46d3284  n64sdk.tar.gz" | sha256sum --check
+          tar -zxvf n64sdk.tar.gz
+          echo "$(pwd)/n64chain-linux/bin" >> $GITHUB_PATH
+        shell: bash
+
+      # 3. Install system dependencies
+      #    Added 'p7zip-full' for decryption and 'unzip' for patching.
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            python3 \
+            binutils-mips-linux-gnu \
+            libaudiofile-dev \
+            libpng-dev \
+            pkg-config \
+            wine \
+            p7zip-full \
+            unzip
+
+      # 4. NEW: Decrypt the Base ROM using the secret password
+      - name: Decrypt Base ROM
+        run: |
+          if [ -z "${{ secrets.ROM_PASSWORD }}" ]; then
+            echo "ERROR: The ROM_PASSWORD secret is not set. Please follow the instructions to create it."
+            exit 1
+          fi
+          echo "Decrypting base ROM from baserom.us.7z..."
+          7z x -p"${{ secrets.ROM_PASSWORD }}" baserom.us.7z
+          echo "Base ROM successfully decrypted."
+
+      # 5. Compile the game
+      - name: Compile Super Mario 64 (z64)
+        run: |
+          make -j$(nproc)
+
+      # 6. Create BPS Patch
+      - name: Create BPS Patch
+        run: |
+          echo "Downloading flips (BPS patch creator)..."
+          curl -L -o flips.zip "https://github.com/Alcaro/Flips/releases/download/v1.31/flips-1.31.zip"
+          unzip flips.zip
+          chmod +x flips-linux
+          echo "Creating BPS patch..."
+          ./flips-linux --create baserom.us.z64 build/us_libultra/sm64.us.z64 sm64-us-patch.bps
+          echo "BPS patch created successfully: sm64-us-patch.bps"
+
+      # 7. Upload the BPS patch as a build artifact
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sm64-patch-us
+          path: sm64-us-patch.bps
