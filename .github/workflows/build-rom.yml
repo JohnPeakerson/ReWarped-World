@@ -20,19 +20,29 @@ jobs:
         with:
           lfs: true
 
-      # 2. Set up the N64 SDK -- THIS STEP IS REVISED PER YOUR INSTRUCTIONS
-      - name: Install N64 SDK from ultra64.ca
+      # 2. Set up the N64 SDK -- THIS STEP IS REVISED TO FIX THE COMPILER NAME
+      - name: Install N64 SDK and create compatibility links
         run: |
           echo "Downloading N64 SDK from ultra64.ca..."
-          # Using the specific link you provided
           wget -O n64sdk.7z http://ultra64.ca/files/software/other/sdks/n64sdk.7z
           
           echo "Extracting SDK..."
-          # Using 7z to extract the archive
           7z x n64sdk.7z
           
+          # --- THE FIX IS HERE ---
+          echo "Creating symbolic links for Makefile compatibility..."
+          # Navigate into the toolchain's binary directory
+          cd n64sdk/mips64/bin
+          # Create links with the names the Makefile expects (mips-linux-gnu-*)
+          # that point to the actual tools that exist (mips64-elf-*)
+          ln -s mips64-elf-gcc mips-linux-gnu-gcc
+          ln -s mips64-elf-g++ mips-linux-gnu-g++
+          ln -s mips64-elf-ld mips-linux-gnu-ld
+          ln -s mips64-elf-objcopy mips-linux-gnu-objcopy
+          # Go back to the project root directory
+          cd ../../..
+          
           echo "Adding SDK to PATH..."
-          # The extracted folder structure is different, so we update the path
           echo "$(pwd)/n64sdk/mips64/bin" >> $GITHUB_PATH
         shell: bash
 
